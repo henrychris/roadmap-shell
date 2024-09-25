@@ -8,11 +8,15 @@ for await (let line of console) {
         process.exit(0);
     }
 
-    const proc = Bun.spawn({
-        cmd: [line],
-        stdout: "inherit",
-    });
-    await proc.exited;
- 
+    try {
+        const proc = Bun.spawn({
+            cmd: [line],
+            stdout: "inherit",
+        });
+        await proc.exited;
+    } catch (error) {
+        console.log("No such file or directory (os error 2)");
+    }
+
     process.stdout.write(prompt);
 }
