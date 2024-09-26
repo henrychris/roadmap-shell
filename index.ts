@@ -12,11 +12,12 @@ async function main() {
         try {
             var commands = getListOfCommands(line);
 
-            const proc = Bun.spawn({
-                cmd: commands,
-                stdout: "inherit",
-            });
-            await proc.exited;
+            if (commands[0] === "cd") {
+                process.chdir(commands[1]);
+            } else {
+                const proc = createProcess(commands);
+                await proc.exited;
+            }
         } catch (error) {
             const err = error as Error;
             console.error(err.message);
@@ -27,13 +28,21 @@ async function main() {
     }
 }
 
+function createProcess(commands: string[]) {
+    return Bun.spawn({
+        cmd: commands,
+        stdout: "inherit",
+        env: { ...Bun.env },
+    });
+}
+
 function getListOfCommands(line: string): string[] {
     let commands: string[] = [];
     let word = "";
 
     for (let index = 0; index < line.length; index++) {
         const char = line[index];
-        console.log(`char:${char}.`);
+        // console.log(`char:${char}.`);
 
         if (char !== " ") {
             word += char;
@@ -41,7 +50,7 @@ function getListOfCommands(line: string): string[] {
             if (word) {
                 // Ensures that empty strings are not pushed
                 commands.push(word);
-                console.log(`Pushed word to commands array: ${word}.`);
+                // console.log(`Pushed word to commands array: ${word}.`);
                 word = "";
             }
         }
@@ -50,7 +59,7 @@ function getListOfCommands(line: string): string[] {
     // Push the last word to the array (if there is any)
     if (word) {
         commands.push(word);
-        console.log(`Pushed last word to commands array: ${word}.`);
+        // console.log(`Pushed last word to commands array: ${word}.`);
     }
 
     return commands;
