@@ -82,6 +82,7 @@ async function executePipeline(commandSections: string[][]) {
     }
 
     if (previousProc) {
+        await previousProc.exited;
     }
 }
 
