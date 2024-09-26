@@ -56,10 +56,4 @@ function getListOfCommands(line: string): string[] {
     return commands;
 }
 
-function listElements(arr: any[]) {
-    arr.forEach((element) => {
-        console.log(`element: ${element}`);
-    });
-}
-
 await main();
