@@ -10,30 +10,15 @@ async function main() {
         }
 
         try {
-            var commands = getListOfCommands(line);
-
-            if (commands[0] === "cd") {
-                process.chdir(commands[1]);
-            } else {
-                const proc = createProcess(commands);
-                await proc.exited;
-            }
+            const commands = getListOfCommands(line);
+            await executeCommand(commands);
         } catch (error) {
             const err = error as Error;
-            console.error(err.message);
-            console.log("No such file or directory (os error 2)");
+            console.error(`Error: ${err.message}`);
         }
 
         process.stdout.write(prompt);
     }
-}
-
-function createProcess(commands: string[]) {
-    return Bun.spawn({
-        cmd: commands,
-        stdout: "inherit",
-        env: { ...Bun.env },
-    });
 }
 
 function getListOfCommands(line: string): string[] {
@@ -63,6 +48,33 @@ function getListOfCommands(line: string): string[] {
     }
 
     return commands;
+}
+
+async function executeCommand(commands: string[]) {
+    const command = commands[0];
+
+    if (command === "cd") {
+        changeDirectory(commands[1]);
+    } else {
+        const proc = createProcess(commands);
+        await proc.exited;
+    }
+}
+
+function createProcess(commands: string[]) {
+    return Bun.spawn({
+        cmd: commands,
+        stdout: "inherit",
+        env: { ...Bun.env },
+    });
+}
+
+function changeDirectory(path: string) {
+    try {
+        process.chdir(path);
+    } catch (error) {
+        throw new Error(`cd: ${path}: No such file or directory`);
+    }
 }
 
 await main();
