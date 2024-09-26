@@ -63,6 +63,9 @@ async function executePipeline(commandSections: string[][]) {
             previousProc = createProcess(section, "pipe");
         } else {
             // For subsequent processes
+            // we convert stdout from readable stream to blob, because bun throws an error if we directly pass stdout of
+            // the previous process to stdin of the new process
+            // see: https://github.com/oven-sh/bun/issues/8049
             const input = await Bun.readableStreamToBlob(
                 previousProc!.stdout as ReadableStream
             );
@@ -73,12 +76,13 @@ async function executePipeline(commandSections: string[][]) {
                 input
             );
 
-            await previousProc!.exited; // Wait for the previous process to finish
-            previousProc = currentProc; // Move to next process
+            await previousProc!.exited;
+            previousProc = currentProc;
         }
     }
 
-    if (previousProc) await previousProc.exited; // Wait for the final process
+    if (previousProc) {
+    }
 }
 
 //#endregion
@@ -150,7 +154,6 @@ function getCommandSections(commands: string[]): string[][] {
 function handleError(error: unknown) {
     const err = error as Error;
     console.error(err.message);
-    // console.error(`Error: ${err.message}`);
 }
 
 function printCommandSections(commandSections: string[][]) {
