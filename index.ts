@@ -10,6 +10,10 @@ async function main() {
     }
 }
 
+// todo: how do we use IPC to propagate messages from main process to subprocess?
+// todo: implement history. first, use in-memory history. then use a file. store commands line, by line
+// save history after handleLine() executes
+
 //#region HANDLING LINE INPUT
 
 async function handleLine(line: string) {
