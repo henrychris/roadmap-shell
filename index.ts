@@ -60,9 +60,15 @@ async function executePipeline(commands: string[][]) {
     let processInput: Blob | undefined;
 
     for (let i = 0; i < commands.length; i++) {
+        const command = commands[i];
+        if (command[0] === "cd") {
+            process.chdir(command[1]);
+            continue;
+        }
+
         const isLast = i === commands.length - 1;
         const proc = createProcess(
-            commands[i],
+            command,
             isLast ? "inherit" : "pipe",
             processInput
         );
