@@ -45,7 +45,7 @@ async function executeCommand(command: string[]) {
 
         const handleSigint = () => {
             if (!proc.killed) {
-                proc.send("SIGINT");
+                process.kill(proc.pid, "SIGINT");
                 process.stdout.write("\n");
                 return;
             }
@@ -91,7 +91,7 @@ async function executePipeline(commands: string[][]) {
 
         const handleSigint = () => {
             if (!proc.killed) {
-                proc.send("SIGINT");
+                process.kill(proc.pid, "SIGINT");
                 process.stdout.write("\n");
                 return;
             }
@@ -145,12 +145,6 @@ function createProcess(
         stdout,
         stdin,
         env: { ...Bun.env },
-        ipc(message, subprocess) {
-            if (message === "SIGINT") {
-                subprocess.kill();
-                console.log("process killed in ipc");
-            }
-        },
     });
 }
 
