@@ -1,5 +1,14 @@
 # roadmap-shell
 
+## About
+
+- Supports builtin commands
+- supports pipes
+
+History coming soon.
+
+## Setup
+
 To install dependencies:
 
 ```bash

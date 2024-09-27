@@ -58,35 +58,66 @@ async function processPipeline(line: string) {
 
 async function executePipeline(commandSections: string[][]) {
     let previousProc: Subprocess | null = null;
+    let currentProc: Subprocess | null = null;
 
-    for (let i = 0; i < commandSections.length; i++) {
-        const section = commandSections[i];
-
-        if (i === 0) {
-            // First process reads from terminal stdin
-            previousProc = createProcess(section, "pipe");
+    const handleSigint = () => {
+        if (currentProc && !currentProc.killed) {
+            currentProc.send("SIGINT");
+            process.stdout.write("\n");
+            console.log("process killed in handler");
         } else {
-            // For subsequent processes
-            // we convert stdout from readable stream to blob, because bun throws an error if we directly pass stdout of
-            // the previous process to stdin of the new process
-            // see: https://github.com/oven-sh/bun/issues/8049
-            const input = await Bun.readableStreamToBlob(
-                previousProc!.stdout as ReadableStream
-            );
-
-            const currentProc = createProcess(
-                section,
-                i === commandSections.length - 1 ? "inherit" : "pipe",
-                input
-            );
-
-            await previousProc!.exited;
-            previousProc = currentProc;
+            console.log("process not killed in handler");
+            process.stdout.write("\n");
+            process.exit(0); // Exit main process on CTRL+C
         }
-    }
+    };
 
-    if (previousProc) {
-        await previousProc.exited;
+    process.on("SIGINT", handleSigint);
+
+    try {
+        for (let i = 0; i < commandSections.length; i++) {
+            const section = commandSections[i];
+            console.log(`Running command: ${section.join(" ")}`);
+
+            if (i === 0) {
+                // First process reads from terminal stdin
+                previousProc = createProcess(section, "pipe");
+                console.log(
+                    `created process for command : ${section.join(" ")}`
+                );
+            } else {
+                // For subsequent processes
+                // we convert stdout from readable stream to blob, because bun throws an error if we directly pass stdout of
+                // the previous process to stdin of the new process
+                // see: https://github.com/oven-sh/bun/issues/8049
+                const input = await Bun.readableStreamToBlob(
+                    previousProc!.stdout as ReadableStream
+                );
+                // Wait for the previous process to exit before continuing
+                await previousProc!.exited;
+
+                currentProc = createProcess(
+                    section,
+                    i === commandSections.length - 1 ? "inherit" : "pipe",
+                    input
+                );
+                console.log(
+                    `created process for command : ${section.join(" ")}`
+                );
+
+                previousProc = currentProc;
+                console.log("previous process completed.");
+            }
+        }
+
+        // Wait for the last process to exit
+        if (previousProc) {
+            await previousProc.exited;
+        }
+    } catch (error) {
+        handleError(error);
+    } finally {
+        process.off("SIGINT", handleSigint);
     }
 }
 
@@ -101,6 +132,19 @@ async function executeCommand(commands: string[]) {
         changeDirectory(commands[1]);
     } else {
         const proc = createProcess(commands, "inherit");
+        process.on("SIGINT", () => {
+            if (!proc.killed) {
+                proc.send("SIGINT");
+                process.stdout.write("\n");
+                console.log("process killed in handler");
+                return;
+            }
+
+            console.log("process not killed in handler");
+            process.stdout.write("\n");
+            process.exit(0); // Exit main process on CTRL+C
+        });
+
         await proc.exited;
     }
 }
@@ -115,6 +159,12 @@ function createProcess(
         stdout,
         stdin,
         env: { ...Bun.env },
+        ipc(message, subprocess) {
+            if (message === "SIGINT") {
+                subprocess.kill();
+                console.log("process killed in ipc");
+            }
+        },
     });
 }
 
@@ -167,6 +217,16 @@ function printCommandSections(commandSections: string[][]) {
         console.log(`Section ${index + 1}:`, section);
     });
 }
+
+const handleSigint = (proc: Subprocess) => {
+    if (!proc.killed) {
+        proc.send("SIGINT");
+        process.stdout.write("\n");
+        return;
+    }
+    process.stdout.write("\n");
+    process.exit(0); // Exit main process on CTRL+C
+};
 
 //#endregion
 
