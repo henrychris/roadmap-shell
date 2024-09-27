@@ -3,9 +3,8 @@
 ## About
 
 - Supports builtin commands
-- supports pipes
-
-History coming soon.
+- Supports pipes
+- Supports in-memory history. Persistent history coming soon.
 
 ## Setup
 
