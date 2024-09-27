@@ -2,6 +2,7 @@ import { type Subprocess } from "bun";
 
 // todo: implement history. first, use in-memory history. then use a file. store commands line, by line
 // save history after handleLine() executes
+let history: string[] = [];
 
 async function main() {
     const prompt = "sh> ";
@@ -9,6 +10,7 @@ async function main() {
 
     for await (let line of console) {
         await handleLine(line.trim());
+        history.push(line.trim());
         process.stdout.write(prompt);
     }
 }
@@ -36,6 +38,8 @@ async function handleLine(line: string) {
 async function executeCommand(command: string[]) {
     if (command[0] === "cd") {
         process.chdir(command[1]);
+    } else if (command[0] === "history") {
+        showHistory("stdout");
     } else {
         const proc = createProcess(command, "inherit");
 
@@ -61,12 +65,24 @@ async function executePipeline(commands: string[][]) {
 
     for (let i = 0; i < commands.length; i++) {
         const command = commands[i];
+        const isLast = i === commands.length - 1;
+
         if (command[0] === "cd") {
             process.chdir(command[1]);
             continue;
         }
 
-        const isLast = i === commands.length - 1;
+        if (command[0] === "history") {
+            if (isLast) {
+                showHistory("stdout");
+            } else {
+                processInput = await Bun.readableStreamToBlob(
+                    showHistory("pipe") as ReadableStream
+                );
+            }
+            continue;
+        }
+
         const proc = createProcess(
             command,
             isLast ? "inherit" : "pipe",
@@ -93,6 +109,27 @@ async function executePipeline(commands: string[][]) {
 
         await proc.exited;
         process.removeListener("SIGINT", handleSigint);
+    }
+}
+
+function showHistory(output: "pipe" | "stdout"): ReadableStream | undefined {
+    if (output === "stdout") {
+        // this writes to the main stdout
+        history.forEach((item, index) => {
+            process.stdout.write(`${index + 1} `);
+            process.stdout.write(`${item}`);
+            process.stdout.write("\n");
+        });
+        return;
+    } else {
+        return new ReadableStream({
+            start(controller) {
+                history.forEach((item, index) => {
+                    controller.enqueue(`${index + 1} ${item}\n`);
+                });
+                controller.close();
+            },
+        });
     }
 }
 
