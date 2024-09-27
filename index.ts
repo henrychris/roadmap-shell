@@ -83,6 +83,8 @@ async function executePipeline(commands: string[][]) {
             continue;
         }
 
+        // the last process should inherit the standard output stream of the main process
+        // so that its results are printed to conole
         const proc = createProcess(
             command,
             isLast ? "inherit" : "pipe",
@@ -114,7 +116,6 @@ async function executePipeline(commands: string[][]) {
 
 function showHistory(output: "pipe" | "stdout"): ReadableStream | undefined {
     if (output === "stdout") {
-        // this writes to the main stdout
         history.forEach((item, index) => {
             process.stdout.write(`${index + 1} `);
             process.stdout.write(`${item}`);
