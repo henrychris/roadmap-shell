@@ -1,6 +1,5 @@
 import { type Subprocess } from "bun";
 
-// todo: how do we use IPC to propagate messages from main process to subprocess?
 // todo: implement history. first, use in-memory history. then use a file. store commands line, by line
 // save history after handleLine() executes
 
@@ -39,7 +38,21 @@ async function executeCommand(command: string[]) {
         process.chdir(command[1]);
     } else {
         const proc = createProcess(command, "inherit");
+
+        const handleSigint = () => {
+            if (!proc.killed) {
+                proc.send("SIGINT");
+                process.stdout.write("\n");
+                return;
+            }
+
+            process.stdout.write("\n");
+            process.exit(0);
+        };
+        process.on("SIGINT", handleSigint);
+
         await proc.exited;
+        process.removeListener("SIGINT", handleSigint);
     }
 }
 
@@ -54,6 +67,18 @@ async function executePipeline(commands: string[][]) {
             processInput
         );
 
+        const handleSigint = () => {
+            if (!proc.killed) {
+                proc.send("SIGINT");
+                process.stdout.write("\n");
+                return;
+            }
+
+            process.stdout.write("\n");
+            process.exit(0);
+        };
+        process.on("SIGINT", handleSigint);
+
         if (!isLast) {
             processInput = await Bun.readableStreamToBlob(
                 proc.stdout as ReadableStream
@@ -61,6 +86,7 @@ async function executePipeline(commands: string[][]) {
         }
 
         await proc.exited;
+        process.removeListener("SIGINT", handleSigint);
     }
 }
 
