@@ -1,7 +1,13 @@
-import { type Subprocess } from "bun";
+import { createProcess, handleError } from "./util.ts";
+
+// todo use node readline
+// read line by line and ensure that the normal other functionality still works
+// listen for keypress and pipe key press to stdin
+// add tests? like, c'mon man
 
 // todo: implement history. first, use in-memory history. then use a file. store commands line, by line
 // save history after handleLine() executes
+// history could be a class...
 let history: string[] = [];
 
 async function main() {
@@ -133,27 +139,5 @@ function showHistory(output: "pipe" | "stdout"): ReadableStream | undefined {
         });
     }
 }
-
-//#region UTILITIES
-
-function createProcess(
-    commands: string[],
-    stdout: "pipe" | "inherit",
-    stdin: any = undefined
-): Subprocess {
-    return Bun.spawn({
-        cmd: commands,
-        stdout,
-        stdin,
-        env: { ...Bun.env },
-    });
-}
-
-function handleError(error: unknown) {
-    const err = error as Error;
-    console.error(err.message);
-}
-
-//#endregion
 
 await main();
