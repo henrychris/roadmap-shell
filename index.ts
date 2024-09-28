@@ -1,7 +1,9 @@
 import * as readline from "readline";
 import { createProcess, handleError } from "./util.ts";
 import { History } from "./history.ts";
+import type { Subprocess } from "bun";
 
+let currentSubprocess: Subprocess | null = null;
 let history = new History();
 let historyLines = await history.getLinesAsync();
 let historyIndex = historyLines.length; // the last item in the index is history_index - 1
@@ -54,6 +56,18 @@ async function main() {
                 currentInput = historyLines[historyIndex];
                 process.stdout.write(currentInput);
             }
+        } else if (key.ctrl && key.name === "c") {
+            // Handle Ctrl + C properly
+            if (currentSubprocess) {
+                process.kill(currentSubprocess.pid, "SIGINT");
+                currentSubprocess = null;
+                console.log("killed subprocess");
+                process.stdout.write("\n");
+            } else {
+                console.log("killing main process");
+                process.stdout.write("^C\n"); // Display Ctrl+C if no subprocess is running
+                process.exit(0);
+            }
         } else {
             currentInput += str;
         }
@@ -86,24 +100,9 @@ async function executeCommandAsync(command: string[]) {
     } else if (command[0] === "history") {
         history.showHistory("stdout");
     } else {
-        const proc = createProcess(command, "inherit");
-
-        const handleSigint = () => {
-            if (!proc.killed) {
-                console.log("subprocess killed");
-                process.kill(proc.pid, "SIGINT");
-                process.stdout.write("\n");
-                return;
-            }
-
-            console.log("subprocess already killed. killing main process.");
-            process.stdout.write("\n");
-            process.exit(0);
-        };
-        process.on("SIGINT", handleSigint);
-
-        await proc.exited;
-        process.removeListener("SIGINT", handleSigint);
+        currentSubprocess = createProcess(command, "inherit");
+        await currentSubprocess.exited;
+        currentSubprocess = null;
     }
 }
 
@@ -132,35 +131,20 @@ async function executePipelineAsync(commands: string[][]) {
 
         // the last process should inherit the standard output stream of the main process
         // so that its results are printed to console
-        const proc = createProcess(
+        currentSubprocess = createProcess(
             command,
             isLast ? "inherit" : "pipe",
             processInput
         );
 
-        const handleSigint = () => {
-            console.log("sigint called");
-            if (!proc.killed) {
-                process.kill(proc.pid, "SIGINT");
-                process.stdout.write("\n");
-                console.log("subprocess killed");
-                return;
-            }
-
-            console.log("subprocess already killed. killing main process.");
-            process.stdout.write("\n");
-            process.exit(0);
-        };
-        process.on("SIGINT", handleSigint);
-
         if (!isLast) {
             processInput = await Bun.readableStreamToBlob(
-                proc.stdout as ReadableStream
+                currentSubprocess.stdout as ReadableStream
             );
         }
 
-        await proc.exited;
-        process.removeListener("SIGINT", handleSigint);
+        await currentSubprocess.exited;
+        currentSubprocess = null;
     }
 }
 
