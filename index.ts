@@ -2,12 +2,16 @@ import * as readline from "readline";
 import { createProcess, handleError } from "./util.ts";
 import { History } from "./history.ts";
 
-// todo: listen for keypress and fetch history from file
-// add tests? please?
-
 let history = new History();
+let historyLines = await history.getLinesAsync();
+let historyIndex = historyLines.length; // the last item in the index is history_index - 1
 
 async function main() {
+    readline.emitKeypressEvents(process.stdin);
+    if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+    }
+
     const prompt = "sh> ";
     var rl = readline.createInterface({
         input: process.stdin,
@@ -15,16 +19,53 @@ async function main() {
         prompt: prompt,
     });
 
+    let currentInput = "";
     rl.prompt();
 
-    rl.on("line", async function (line: string) {
-        await handleLine(line.trim());
-        history.push(line.trim());
-        rl.prompt();
+    process.stdin.on("keypress", async function (str, key) {
+        switch (key.name) {
+            case "return":
+                if (currentInput.trim()) {
+                    await handleLineAsync(currentInput.trim());
+                    history.push(currentInput.trim());
+                    historyLines.push(currentInput.trim());
+                    historyIndex = historyLines.length; // Reset history index
+                }
+
+                currentInput = "";
+                rl.prompt();
+                break;
+            case "backspace":
+                if (currentInput.length > 0) {
+                    currentInput = currentInput.slice(0, -1);
+                    process.stdout.write("\b \b"); // Move back, print space, move back again to delete character
+                }
+                break;
+            case "up":
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+                    currentInput = historyLines[historyIndex];
+                    process.stdout.write(currentInput);
+                }
+                break;
+            case "down":
+                if (historyIndex < historyLines.length - 1) {
+                    // Navigate down in history
+                    historyIndex++;
+                    rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+                    currentInput = historyLines[historyIndex];
+                    process.stdout.write(currentInput);
+                }
+                break;
+            default:
+                currentInput += str;
+                break;
+        }
     });
 }
 
-async function handleLine(line: string) {
+async function handleLineAsync(line: string) {
     if (line === "exit") {
         process.exit(0);
     }
@@ -35,16 +76,16 @@ async function handleLine(line: string) {
 
     try {
         if (commands.length === 1) {
-            await executeCommand(commands[0]);
+            await executeCommandAsync(commands[0]);
         } else {
-            await executePipeline(commands);
+            await executePipelineAsync(commands);
         }
     } catch (error) {
         handleError(error);
     }
 }
 
-async function executeCommand(command: string[]) {
+async function executeCommandAsync(command: string[]) {
     if (command[0] === "cd") {
         process.chdir(command[1]);
     } else if (command[0] === "history") {
@@ -69,7 +110,7 @@ async function executeCommand(command: string[]) {
     }
 }
 
-async function executePipeline(commands: string[][]) {
+async function executePipelineAsync(commands: string[][]) {
     let processInput: Blob | undefined;
 
     for (let i = 0; i < commands.length; i++) {

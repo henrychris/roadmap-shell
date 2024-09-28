@@ -42,7 +42,7 @@ export class History {
         }
     }
 
-    async getLines(): Promise<string[]> {
+    async getLinesAsync(): Promise<string[]> {
         const content = await this.#history.text();
         return content.split("\n").filter(Boolean);
     }
