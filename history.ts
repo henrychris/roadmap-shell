@@ -1,22 +1,18 @@
 import type { BunFile } from "bun";
-import { appendFile } from "node:fs";
 import * as readline from "readline";
+import { promises as fs } from "node:fs";
 import { convertBunReadableToNodeReadable } from "./util";
 
 export class History {
-    #PATH: string = "hsh_history";
+    private readonly PATH: string = "hsh_history";
     #history: BunFile;
 
     constructor() {
-        this.#history = Bun.file(this.#PATH);
+        this.#history = Bun.file(this.PATH);
     }
 
     push(line: string) {
-        appendFile(this.#PATH, `${line}\n`, (err) => {
-            if (err) {
-                throw new Error(err.message);
-            }
-        });
+        fs.appendFile(this.PATH, `${line}\n`);
     }
 
     showHistory(output: "pipe" | "stdout"): ReadableStream | undefined {
@@ -44,5 +40,10 @@ export class History {
                 },
             });
         }
+    }
+
+    async getLines(): Promise<string[]> {
+        const content = await this.#history.text();
+        return content.split("\n").filter(Boolean);
     }
 }
