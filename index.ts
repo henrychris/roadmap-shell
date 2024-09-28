@@ -11,7 +11,6 @@ let historyIndex = historyLines.length; // the last item in the index is history
 async function main() {
     readline.emitKeypressEvents(process.stdin);
     if (process.stdin.isTTY) {
-        console.log("raw mode set");
         process.stdin.setRawMode(true);
     }
 
@@ -67,10 +66,8 @@ async function main() {
             if (currentSubprocess) {
                 process.kill(currentSubprocess.pid, "SIGINT");
                 currentSubprocess = null;
-                console.log("killed subprocess");
                 process.stdout.write("\n");
             } else {
-                console.log("killing main process");
                 process.stdout.write("^C\n"); // Display Ctrl+C if no subprocess is running
                 process.exit(0);
             }
