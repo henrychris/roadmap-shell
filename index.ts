@@ -16,17 +16,12 @@ async function main() {
     }
 
     const prompt = "sh> ";
-    var rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        prompt: prompt,
-    });
-
     let currentInput = "";
-    rl.prompt();
+    process.stdout.write(prompt);
 
     process.stdin.on("keypress", async function (str, key) {
         if (key.name === "return") {
+            process.stdout.write("\n");
             if (currentInput.trim()) {
                 await handleLineAsync(currentInput.trim());
                 history.push(currentInput.trim());
@@ -35,7 +30,7 @@ async function main() {
             }
 
             currentInput = "";
-            rl.prompt();
+            process.stdout.write(prompt);
         } else if (key.name === "backspace") {
             if (currentInput.length > 0) {
                 currentInput = currentInput.slice(0, -1);
@@ -43,8 +38,12 @@ async function main() {
             }
         } else if (key.name === "up") {
             if (historyIndex > 0) {
+                // Navigate up in history
                 historyIndex--;
-                rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+
+                process.stdout.clearLine(-1);
+                process.stdout.write(`\r${prompt}`);
+
                 currentInput = historyLines[historyIndex];
                 process.stdout.write(currentInput);
             }
@@ -52,7 +51,10 @@ async function main() {
             if (historyIndex < historyLines.length - 1) {
                 // Navigate down in history
                 historyIndex++;
-                rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+
+                process.stdout.clearLine(-1);
+                process.stdout.write(`\r${prompt}`);
+
                 currentInput = historyLines[historyIndex];
                 process.stdout.write(currentInput);
             }
@@ -70,6 +72,7 @@ async function main() {
             }
         } else {
             currentInput += str;
+            process.stdout.write(str); // Echo the typed character once
         }
     });
 }
