@@ -10,18 +10,19 @@ var readline = require("readline");
 let history: string[] = [];
 
 async function main() {
+    const prompt = "sh> ";
     var rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
+        prompt: prompt,
     });
 
-    const prompt = "sh> ";
-    process.stdout.write(prompt);
+    rl.prompt();
 
     rl.on("line", async function (line: string) {
         await handleLine(line.trim());
         history.push(line.trim());
-        process.stdout.write(prompt);
+        rl.prompt();
     });
 }
 
@@ -94,7 +95,7 @@ async function executePipeline(commands: string[][]) {
         }
 
         // the last process should inherit the standard output stream of the main process
-        // so that its results are printed to conole
+        // so that its results are printed to console
         const proc = createProcess(
             command,
             isLast ? "inherit" : "pipe",
