@@ -1,24 +1,28 @@
 import { createProcess, handleError } from "./util.ts";
-
-// todo use node readline
-// read line by line and ensure that the normal other functionality still works
-// listen for keypress and pipe key press to stdin
-// add tests? like, c'mon man
+var readline = require("readline");
 
 // todo: implement history. first, use in-memory history. then use a file. store commands line, by line
 // save history after handleLine() executes
+// todo listen for keypress and pipe key press to stdin
+// add tests? like, c'mon man
+
 // history could be a class...
 let history: string[] = [];
 
 async function main() {
+    var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
     const prompt = "sh> ";
     process.stdout.write(prompt);
 
-    for await (let line of console) {
+    rl.on("line", async function (line: string) {
         await handleLine(line.trim());
         history.push(line.trim());
         process.stdout.write(prompt);
-    }
+    });
 }
 
 async function handleLine(line: string) {
