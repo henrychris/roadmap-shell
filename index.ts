@@ -90,11 +90,13 @@ async function executeCommandAsync(command: string[]) {
 
         const handleSigint = () => {
             if (!proc.killed) {
+                console.log("subprocess killed");
                 process.kill(proc.pid, "SIGINT");
                 process.stdout.write("\n");
                 return;
             }
 
+            console.log("subprocess already killed. killing main process.");
             process.stdout.write("\n");
             process.exit(0);
         };
@@ -137,12 +139,15 @@ async function executePipelineAsync(commands: string[][]) {
         );
 
         const handleSigint = () => {
+            console.log("sigint called");
             if (!proc.killed) {
                 process.kill(proc.pid, "SIGINT");
                 process.stdout.write("\n");
+                console.log("subprocess killed");
                 return;
             }
 
+            console.log("subprocess already killed. killing main process.");
             process.stdout.write("\n");
             process.exit(0);
         };
