@@ -58,6 +58,10 @@ async function main() {
                 currentInput = historyLines[historyIndex];
                 process.stdout.write(currentInput);
             }
+        } else if (key.name === "left") {
+            // do nothing
+        } else if (key.name === "right") {
+            // do nothing
         } else if (key.ctrl && key.name === "c") {
             // Handle Ctrl + C properly
             if (currentSubprocess) {
