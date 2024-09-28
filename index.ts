@@ -37,7 +37,7 @@ async function main() {
         } else if (key.name === "backspace") {
             if (currentInput.length > 0) {
                 currentInput = currentInput.slice(0, -1);
-                process.stdout.write("\b \b"); // Move back, print space, move back again to delete character
+                process.stdout.write(" \b"); // print space, move back again to delete character
             }
         } else if (key.name === "up") {
             if (historyIndex > 0) {
