@@ -9,6 +9,7 @@ let historyIndex = historyLines.length; // the last item in the index is history
 async function main() {
     readline.emitKeypressEvents(process.stdin);
     if (process.stdin.isTTY) {
+        console.log("raw mode set");
         process.stdin.setRawMode(true);
     }
 
