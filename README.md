@@ -4,7 +4,7 @@
 
 - Supports builtin commands
 - Supports pipes
-- Supports in-memory history. Persistent history coming soon.
+- Supports persistent history and the `history` command.
 
 ## Setup
 
