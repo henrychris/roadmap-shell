@@ -1,13 +1,11 @@
+import * as readline from "readline";
 import { createProcess, handleError } from "./util.ts";
-var readline = require("readline");
+import { History } from "./history.ts";
 
-// todo: implement history. first, use in-memory history. then use a file. store commands line, by line
-// save history after handleLine() executes
-// todo listen for keypress and pipe key press to stdin
-// add tests? like, c'mon man
+// todo: listen for keypress and fetch history from file
+// add tests? please?
 
-// history could be a class...
-let history: string[] = [];
+let history = new History();
 
 async function main() {
     const prompt = "sh> ";
@@ -50,7 +48,7 @@ async function executeCommand(command: string[]) {
     if (command[0] === "cd") {
         process.chdir(command[1]);
     } else if (command[0] === "history") {
-        showHistory("stdout");
+        history.showHistory("stdout");
     } else {
         const proc = createProcess(command, "inherit");
 
@@ -85,10 +83,10 @@ async function executePipeline(commands: string[][]) {
 
         if (command[0] === "history") {
             if (isLast) {
-                showHistory("stdout");
+                history.showHistory("stdout");
             } else {
                 processInput = await Bun.readableStreamToBlob(
-                    showHistory("pipe") as ReadableStream
+                    history.showHistory("pipe") as ReadableStream
                 );
             }
             continue;
@@ -122,26 +120,6 @@ async function executePipeline(commands: string[][]) {
 
         await proc.exited;
         process.removeListener("SIGINT", handleSigint);
-    }
-}
-
-function showHistory(output: "pipe" | "stdout"): ReadableStream | undefined {
-    if (output === "stdout") {
-        history.forEach((item, index) => {
-            process.stdout.write(`${index + 1} `);
-            process.stdout.write(`${item}`);
-            process.stdout.write("\n");
-        });
-        return;
-    } else {
-        return new ReadableStream({
-            start(controller) {
-                history.forEach((item, index) => {
-                    controller.enqueue(`${index + 1} ${item}\n`);
-                });
-                controller.close();
-            },
-        });
     }
 }
 
