@@ -23,44 +23,38 @@ async function main() {
     rl.prompt();
 
     process.stdin.on("keypress", async function (str, key) {
-        switch (key.name) {
-            case "return":
-                if (currentInput.trim()) {
-                    await handleLineAsync(currentInput.trim());
-                    history.push(currentInput.trim());
-                    historyLines.push(currentInput.trim());
-                    historyIndex = historyLines.length; // Reset history index
-                }
+        if (key.name === "return") {
+            if (currentInput.trim()) {
+                await handleLineAsync(currentInput.trim());
+                history.push(currentInput.trim());
+                historyLines.push(currentInput.trim());
+                historyIndex = historyLines.length; // Reset history index
+            }
 
-                currentInput = "";
-                rl.prompt();
-                break;
-            case "backspace":
-                if (currentInput.length > 0) {
-                    currentInput = currentInput.slice(0, -1);
-                    process.stdout.write("\b \b"); // Move back, print space, move back again to delete character
-                }
-                break;
-            case "up":
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    rl.write(null, { ctrl: true, name: "u" }); // Clear current input
-                    currentInput = historyLines[historyIndex];
-                    process.stdout.write(currentInput);
-                }
-                break;
-            case "down":
-                if (historyIndex < historyLines.length - 1) {
-                    // Navigate down in history
-                    historyIndex++;
-                    rl.write(null, { ctrl: true, name: "u" }); // Clear current input
-                    currentInput = historyLines[historyIndex];
-                    process.stdout.write(currentInput);
-                }
-                break;
-            default:
-                currentInput += str;
-                break;
+            currentInput = "";
+            rl.prompt();
+        } else if (key.name === "backspace") {
+            if (currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
+                process.stdout.write("\b \b"); // Move back, print space, move back again to delete character
+            }
+        } else if (key.name === "up") {
+            if (historyIndex > 0) {
+                historyIndex--;
+                rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+                currentInput = historyLines[historyIndex];
+                process.stdout.write(currentInput);
+            }
+        } else if (key.name === "down") {
+            if (historyIndex < historyLines.length - 1) {
+                // Navigate down in history
+                historyIndex++;
+                rl.write(null, { ctrl: true, name: "u" }); // Clear current input
+                currentInput = historyLines[historyIndex];
+                process.stdout.write(currentInput);
+            }
+        } else {
+            currentInput += str;
         }
     });
 }
