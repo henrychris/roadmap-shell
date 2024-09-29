@@ -62,13 +62,12 @@ async function main() {
         } else if (key.name === "right") {
             // do nothing
         } else if (key.ctrl && key.name === "c") {
-            // Handle Ctrl + C properly
             if (currentSubprocess) {
                 process.kill(currentSubprocess.pid, "SIGINT");
                 currentSubprocess = null;
                 process.stdout.write("\n");
             } else {
-                process.stdout.write("^C\n"); // Display Ctrl+C if no subprocess is running
+                process.stdout.write("^C\n");
                 process.exit(0);
             }
         } else {
