@@ -1,4 +1,4 @@
-# roadmap-shell
+# Simple Shell
 
 A simple terminal built using TypeScript and Bun. Based of John Crickett's coding challenges, found [here](https://codingchallenges.fyi/challenges/challenge-shell/).
 
