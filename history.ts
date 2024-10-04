@@ -43,6 +43,10 @@ export class History {
     }
 
     async getLinesAsync(): Promise<string[]> {
+        if (!await this.#history.exists()) {
+            Bun.write(this.#history, "");
+        }
+        
         const content = await this.#history.text();
         return content.split("\n").filter(Boolean);
     }
